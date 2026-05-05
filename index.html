@@ -906,10 +906,15 @@
     updateHomeStats();
     renderLogs();
     registerServiceWorker();
+    // Always show install button — works on localhost & https
+    document.getElementById('installBtn').style.display = 'block';
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       deferredPrompt = e;
-      document.getElementById('installBtn').style.display = 'block';
+    });
+    window.addEventListener('appinstalled', () => {
+      document.getElementById('installBtn').style.display = 'none';
+      showToast('✅ GlucoWise installed!');
     });
   });
 
@@ -1002,28 +1007,39 @@
       apiStatus.classList.remove('visible');
       if (!res.ok) throw new Error(`API ${res.status}`);
       const data = await res.json();
-      showResult(Math.round(data.probability * 100), data.risk_level, data.confidence, false);
+      showResult(Math.round(data.probability * 100), data.risk_level, data.confidence);
     } catch (err) {
       clearTimeout(wakeTimer);
       apiStatus.classList.remove('visible');
-      console.warn('API unavailable, offline fallback:', err);
-      showToast('⚠️ Offline mode — using local estimate');
-      const score = offlineScore(age, glu, bmi, bp);
-      const risk  = score < 30 ? 'Low' : score < 60 ? 'Moderate' : 'High';
-      showResult(score, risk, null, true);
+      console.warn('API unavailable:', err);
+      showAIError();
     }
     btn.classList.remove('loading');
     btn.innerText = 'Analyze My Risk →';
   }
 
+  /* ── AI UNAVAILABLE ERROR ───────────────────────────── */
+  function showAIError() {
+    const resultNum = document.getElementById('resultNum');
+    const resultTag = document.getElementById('resultTag');
+    const insights  = document.getElementById('resultInsights');
+    resultNum.innerHTML = '<span style="font-size:48px">⚠️</span>';
+    resultTag.innerText        = '⚡ AI Unavailable';
+    resultTag.style.background = 'rgba(251,191,36,0.2)';
+    resultTag.style.color      = 'var(--warn)';
+    insights.innerHTML = '';
+    addInsight(insights, '📡', 'Could not connect to the AI server. It may be starting up — please wait 30 seconds and try again.', 'warn');
+    addInsight(insights, '🔄', 'Tap the button below to retry. No result has been saved.', '');
+    document.getElementById('resultOverlay').classList.add('open');
+  }
+
   /* ── SHOW RESULT MODAL ─────────────────────────────── */
-  function showResult(score, riskLevel, confidence, isOffline) {
+  function showResult(score, riskLevel, confidence) {
     const resultNum = document.getElementById('resultNum');
     const resultTag = document.getElementById('resultTag');
     const insights  = document.getElementById('resultInsights');
     resultNum.innerText = score + '%';
     insights.innerHTML  = '';
-    if (isOffline) addInsight(insights, '📡', 'Offline estimate — connect to Render API for precise ML results.', '');
     if (riskLevel === 'Low') {
       resultTag.innerText        = '🟢 Low Risk';
       resultTag.style.background = 'rgba(74,222,128,0.2)';
@@ -1040,7 +1056,7 @@
       resultTag.style.color      = 'var(--danger)';
       addInsight(insights, '❗', 'High risk detected. We strongly recommend consulting a healthcare provider.', 'danger');
     }
-    if (confidence !== null) addInsight(insights, '🧠', `Model confidence: ${confidence.toFixed(1)}%`, '');
+    addInsight(insights, '🧠', `AI Model confidence: ${confidence.toFixed(1)}%`, '');
     if (predictionData.act === 'sedentary') addInsight(insights, '🏃', '30 min of walking daily can reduce diabetes risk by up to 30%.', 'warn');
     if (predictionData.fam === 'yes')       addInsight(insights, '🧬', 'Family history noted. Annual glucose screening is recommended.', 'warn');
     if (predictionData.smoke === 'yes')     addInsight(insights, '🚭', 'Smoking raises insulin resistance — quitting is one of the biggest wins.', 'warn');
@@ -1170,11 +1186,16 @@
   }
 
   async function installPWA() {
-    if (!deferredPrompt) return;
+    if (!deferredPrompt) {
+      // File:// protocol or already installed — guide user
+      showToast('💡 Open via localhost:8000 or the live URL to install');
+      return;
+    }
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
     if (outcome === 'accepted') {
       document.getElementById('installBtn').style.display = 'none';
+      showToast('✅ GlucoWise installed!');
     }
     deferredPrompt = null;
   }
