@@ -1175,6 +1175,19 @@
     if (lastScore < 30)      { riskBadge.innerText = 'Low Risk';      riskBadge.style.color = 'var(--accent)'; }
     else if (lastScore < 60) { riskBadge.innerText = 'Moderate Risk'; riskBadge.style.color = 'var(--warn)';   }
     else                     { riskBadge.innerText = 'High Risk';      riskBadge.style.color = 'var(--danger)'; }
+
+    // Pull BMI & BP from saved predict inputs
+    const inputs = JSON.parse(localStorage.getItem('gluInputs') || 'null');
+    if (inputs) {
+      const bmi = parseFloat(inputs.bmi).toFixed(1);
+      const bp  = parseInt(inputs.bp);
+      document.getElementById('metBMI').innerText = bmi;
+      document.getElementById('barBMI').style.width = Math.min(((inputs.bmi - 15) / (50 - 15)) * 100, 100) + '%';
+      document.getElementById('metBP').innerText  = bp;
+      document.getElementById('barBP').style.width  = Math.min(((bp - 50) / (122 - 50)) * 100, 100) + '%';
+    }
+
+    // Pull Glucose & Steps from daily log
     const logs = JSON.parse(localStorage.getItem('gluLogs') || '[]');
     if (logs.length > 0) {
       document.getElementById('metGlucose').innerText = logs[0].glucose;
