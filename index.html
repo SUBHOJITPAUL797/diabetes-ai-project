@@ -964,6 +964,7 @@
     document.getElementById(screenId).classList.add('active');
     document.getElementById('nav-' + screenId).classList.add('active');
     document.getElementById(screenId).scrollTop = 0;
+    if (screenId === 'home') updateHomeStats();
   }
 
   /* ── GENDER TOGGLE ─────────────────────────────────── */
