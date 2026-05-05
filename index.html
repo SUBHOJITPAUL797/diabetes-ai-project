@@ -939,7 +939,11 @@
 
   function restoreInputs() {
     const saved = JSON.parse(localStorage.getItem('gluInputs') || 'null');
-    if (!saved) return;
+    if (!saved) {
+      // First visit on this domain — save the HTML defaults so Quick Stats shows values
+      saveInputs();
+      return;
+    }
     const set = (id, val) => {
       const el = document.getElementById(id);
       if (el) el.value = val;
