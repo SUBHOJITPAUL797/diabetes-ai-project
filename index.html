@@ -683,37 +683,37 @@
       <div class="form-group" id="pregGroup">
         <div class="form-label">Pregnancies <span id="valPreg">0</span></div>
         <input type="range" id="slPreg" min="0" max="17" value="0"
-               oninput="document.getElementById('valPreg').textContent=this.value" />
+               oninput="document.getElementById('valPreg').textContent=this.value; saveInputs()" />
       </div>
 
       <div class="form-group">
         <div class="form-label">Age <span id="valAge">35</span></div>
         <input type="range" id="slAge" min="21" max="81" value="35"
-               oninput="document.getElementById('valAge').textContent=this.value" />
+               oninput="document.getElementById('valAge').textContent=this.value; saveInputs()" />
       </div>
 
       <div class="form-group">
         <div class="form-label">Blood Glucose <span id="valGlucose">110 mg/dL</span></div>
         <input type="range" id="slGlucose" min="70" max="200" value="110"
-               oninput="document.getElementById('valGlucose').textContent=this.value+' mg/dL'" />
+               oninput="document.getElementById('valGlucose').textContent=this.value+' mg/dL'; saveInputs()" />
       </div>
 
       <div class="form-group">
         <div class="form-label">BMI <span id="valBMI">24.5</span></div>
         <input type="range" id="slBMI" min="15" max="50" step=".5" value="24.5"
-               oninput="document.getElementById('valBMI').textContent=parseFloat(this.value).toFixed(1)" />
+               oninput="document.getElementById('valBMI').textContent=parseFloat(this.value).toFixed(1); saveInputs()" />
       </div>
 
       <div class="form-group">
         <div class="form-label">Blood Pressure (diastolic) <span id="valBP">80 mmHg</span></div>
         <input type="range" id="slBP" min="50" max="122" value="80"
-               oninput="document.getElementById('valBP').textContent=this.value+' mmHg'" />
+               oninput="document.getElementById('valBP').textContent=this.value+' mmHg'; saveInputs()" />
       </div>
 
       <div class="form-group">
         <div class="form-label">Insulin Level <span id="valInsulin">80 mu U/ml</span></div>
         <input type="range" id="slInsulin" min="0" max="846" value="80"
-               oninput="document.getElementById('valInsulin').textContent=this.value+' mu U/ml'" />
+               oninput="document.getElementById('valInsulin').textContent=this.value+' mu U/ml'; saveInputs()" />
       </div>
 
       <div class="form-group">
@@ -721,7 +721,7 @@
           <span style="font-size:10px;color:var(--muted);text-transform:none;letter-spacing:0">(Diabetes Pedigree)</span>
         </div>
         <input type="range" id="slDPF" min="0.08" max="2.42" step="0.01" value="0.47"
-               oninput="document.getElementById('valDPF').textContent=parseFloat(this.value).toFixed(2)" />
+               oninput="document.getElementById('valDPF').textContent=parseFloat(this.value).toFixed(2); saveInputs()" />
       </div>
 
       <div class="form-group">
@@ -902,6 +902,7 @@
 
   /* ── INITIALIZATION ────────────────────────────────── */
   window.addEventListener('load', () => {
+    restoreInputs();
     renderTips('all');
     updateHomeStats();
     renderLogs();
@@ -917,6 +918,44 @@
       showToast('✅ GlucoWise installed!');
     });
   });
+
+  /* ── SAVE / RESTORE INPUTS ─────────────────────────── */
+  function saveInputs() {
+    const d = {
+      preg:    document.getElementById('slPreg').value,
+      age:     document.getElementById('slAge').value,
+      glucose: document.getElementById('slGlucose').value,
+      bmi:     document.getElementById('slBMI').value,
+      bp:      document.getElementById('slBP').value,
+      insulin: document.getElementById('slInsulin').value,
+      dpf:     document.getElementById('slDPF').value,
+      gender:  userGender,
+      fam:     predictionData.fam,
+      act:     predictionData.act,
+      smoke:   predictionData.smoke
+    };
+    localStorage.setItem('gluInputs', JSON.stringify(d));
+  }
+
+  function restoreInputs() {
+    const saved = JSON.parse(localStorage.getItem('gluInputs') || 'null');
+    if (!saved) return;
+    const set = (id, val) => {
+      const el = document.getElementById(id);
+      if (el) el.value = val;
+    };
+    set('slPreg',    saved.preg);    document.getElementById('valPreg').textContent    = saved.preg;
+    set('slAge',     saved.age);     document.getElementById('valAge').textContent     = saved.age;
+    set('slGlucose', saved.glucose); document.getElementById('valGlucose').textContent = saved.glucose + ' mg/dL';
+    set('slBMI',     saved.bmi);     document.getElementById('valBMI').textContent     = parseFloat(saved.bmi).toFixed(1);
+    set('slBP',      saved.bp);      document.getElementById('valBP').textContent      = saved.bp + ' mmHg';
+    set('slInsulin', saved.insulin); document.getElementById('valInsulin').textContent = saved.insulin + ' mu U/ml';
+    set('slDPF',     saved.dpf);     document.getElementById('valDPF').textContent     = parseFloat(saved.dpf).toFixed(2);
+    if (saved.gender) selectGender(saved.gender);
+    if (saved.fam)    selectToggle('fam',   saved.fam);
+    if (saved.act)    selectToggle('act',   saved.act);
+    if (saved.smoke)  selectToggle('smoke', saved.smoke);
+  }
 
   /* ── NAVIGATION ────────────────────────────────────── */
   function gotoScreen(screenId) {
@@ -940,6 +979,7 @@
       document.getElementById('slPreg').value = 0;
       document.getElementById('valPreg').textContent = '0';
     }
+    saveInputs();
   }
 
   /* ── TOGGLE BUTTONS ────────────────────────────────── */
@@ -951,9 +991,10 @@
     const togActSedentary= document.getElementById('togActSedentary');
     const togSmokeNo     = document.getElementById('togSmokeNo');
     const togSmokeYes    = document.getElementById('togSmokeYes');
-    if (type === 'fam')   { val==='no'      ? togFamNo.classList.add('sel')      : togFamYes.classList.add('sel');      togFamNo.classList.toggle('sel',val==='no');      togFamYes.classList.toggle('sel',val==='yes'); }
+    if (type === 'fam')   { togFamNo.classList.toggle('sel',val==='no');      togFamYes.classList.toggle('sel',val==='yes'); }
     if (type === 'act')   { togActActive.classList.toggle('sel',val==='active');  togActSedentary.classList.toggle('sel',val==='sedentary'); }
     if (type === 'smoke') { togSmokeNo.classList.toggle('sel',val==='no');        togSmokeYes.classList.toggle('sel',val==='yes'); }
+    saveInputs();
   }
 
   /* ── OFFLINE FALLBACK SCORE ────────────────────────── */
