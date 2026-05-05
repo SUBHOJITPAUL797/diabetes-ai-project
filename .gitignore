@@ -1,0 +1,17 @@
+# Personal / dev context files
+PROJECT_CONTEXT.md
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyc
+*.pyo
+
+# Virtual environments
+venv/
+env/
+.env
+
+# OS
+.DS_Store
+Thumbs.db
